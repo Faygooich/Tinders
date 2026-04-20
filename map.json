@@ -415,8 +415,31 @@
           "opacity": 0.7,
           "z": 0,
           "texture": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAYAAABwrHhvAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAVklEQVRYhe3XwQnAMAwDwLTk3Qzj/YdKFkiGUKEUTn/B4YfAV1XtFmQ8I6m3O2q/EAAAAACAnm75XDPqf34BAAAAAICebrm/AAAAAOD3AH8BAAAAAMAB6AALKlk7cF0AAAAASUVORK5CYII="
+        },
+        {
+          "id": 48,
+          "type": "portal",
+          "name": "portal_48",
+          "x": 1216,
+          "y": 416,
+          "w": 64,
+          "h": 128,
+          "color": "#aa44ff",
+          "opacity": 0,
+          "z": 5,
+          "texture": null,
+          "targetSceneId": 2
         }
       ]
+    },
+    {
+      "id": 2,
+      "name": "сцена 2",
+      "spawnPoint": {
+        "x": 640,
+        "y": 360
+      },
+      "objects": []
     }
   ]
 }
