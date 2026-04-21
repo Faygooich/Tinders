@@ -228,7 +228,7 @@
           "x": 640,
           "y": 448,
           "w": 128,
-          "h": 256,
+          "h": 240,
           "color": "#ff3333",
           "opacity": 0.3,
           "z": 10,
@@ -461,6 +461,20 @@
           "texture": null,
           "keyTag": "key1",
           "pickupText": "Подобрать?"
+        },
+        {
+          "id": 51,
+          "type": "interaction",
+          "name": "interaction_51",
+          "x": 1024,
+          "y": 96,
+          "w": 64,
+          "h": 64,
+          "color": "#ffaa00",
+          "opacity": 0.22,
+          "z": 1,
+          "texture": null,
+          "dialogText": "Странная решетка в стене. Из-за нее слышны звуки булькающей воды"
         }
       ]
     },
