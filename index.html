@@ -27,6 +27,57 @@
     #game-canvas{ position:absolute; top:0; left:0; image-rendering:pixelated; }
     #scanlines{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
     #fade-overlay{ position:absolute; top:0; left:0; width:100%; height:100%; background:#000; pointer-events:none; z-index:20; opacity:0; transition:none; }
+
+    /* ── DIALOG ── */
+    #dialog-box{
+      position:absolute; bottom:72px; left:50%; transform:translateX(-50%);
+      width:min(640px,88vw); background:rgba(0,0,0,0.92); border:1px solid #333;
+      padding:20px 24px 14px; z-index:15; display:none;
+    }
+    #dialog-text{
+      font-size:17px; letter-spacing:2px; line-height:1.7;
+      min-height:2.8em; color:#e2e2e2; white-space:pre-wrap; word-break:break-word;
+    }
+    #dialog-cursor{
+      display:inline-block; width:9px; height:17px;
+      background:#ddd; margin-left:2px; vertical-align:text-bottom;
+      animation:blink .55s step-end infinite;
+    }
+    @keyframes blink{ 50%{ opacity:0; } }
+    #dialog-choices{
+      display:none; margin-top:14px; flex-direction:row; gap:14px;
+    }
+    .d-choice{
+      padding:5px 16px; border:1px solid #444;
+      font-family:'CustomFont',monospace; font-size:13px;
+      letter-spacing:3px; color:#666; cursor:pointer; transition:all .1s;
+    }
+    .d-choice.sel{ border-color:#ccc; color:#ccc; }
+    .d-choice:hover{ border-color:#888; color:#aaa; }
+    #dialog-continue{
+      text-align:right; font-size:9px; letter-spacing:3px;
+      color:#444; margin-top:10px; display:none;
+    }
+
+    /* ── INTERACT PROMPT ── */
+    #interact-prompt{
+      position:absolute; background:rgba(0,0,0,0.78); border:1px solid #444;
+      font-size:9px; letter-spacing:2px; color:#999; padding:3px 8px;
+      pointer-events:none; z-index:12; display:none;
+      transform:translateX(-50%);
+    }
+
+    /* ── KEY HUD ── */
+    #key-hud{
+      position:absolute; top:16px; right:16px;
+      z-index:12; display:flex; flex-direction:column;
+      gap:4px; align-items:flex-end;
+    }
+    .key-hud-entry{
+      font-size:10px; letter-spacing:2px; color:#00ff88;
+      background:rgba(0,0,0,0.65); padding:3px 8px;
+      border:1px solid rgba(0,255,136,0.22);
+    }
   </style>
 </head>
 <body>
@@ -41,6 +92,19 @@
     <canvas id="game-canvas"></canvas>
     <canvas id="scanlines"></canvas>
     <div id="fade-overlay"></div>
+
+    <!-- DIALOG -->
+    <div id="dialog-box">
+      <div id="dialog-text"></div>
+      <div id="dialog-choices"></div>
+      <div id="dialog-continue">[ e ]</div>
+    </div>
+
+    <!-- INTERACT PROMPT -->
+    <div id="interact-prompt">[ e ]</div>
+
+    <!-- KEY HUD -->
+    <div id="key-hud"></div>
   </div>
 
   <script>
@@ -53,26 +117,22 @@
   /* ─────────────────────────────────────
      SCENE SYSTEM
   ───────────────────────────────────── */
-  let scenes        = [];
+  let scenes         = [];
   let currentSceneId = null;
-  let texCache      = {};  // objId → Image
+  let texCache       = {};  // objId → Image
 
-  // Transition state
-  let fadePhase     = 'idle';  // 'idle' | 'out' | 'in'
-  let fadeAlpha     = 0;
-  let pendingScene  = null;
+  let fadePhase    = 'idle';
+  let fadeAlpha    = 0;
+  let pendingScene = null;
   let portalCooldown = 0;
-
-  const FADE_SPEED  = 4.5;  // alpha units per second → ~220ms
+  const FADE_SPEED = 4.5;
 
   function currentScene() { return scenes.find(s => s.id === currentSceneId); }
 
   function preloadScene(scene) {
     for (const obj of scene.objects || []) {
       if (obj.texture && !texCache[obj.id]) {
-        const img = new Image();
-        img.src = obj.texture;
-        texCache[obj.id] = img;
+        const img = new Image(); img.src = obj.texture; texCache[obj.id] = img;
       }
     }
   }
@@ -82,8 +142,7 @@
     if (!scene) return;
     currentSceneId = sceneId;
     preloadScene(scene);
-    // Position player at spawn
-    const sp = scene.spawnPoint || { x: 640, y: 360 };
+    const sp = scene.spawnPoint || { x:640, y:360 };
     px = sp.x - (SPRITE_W * SCALE) / 2;
     py = sp.y - (SPRITE_H * SCALE) / 2;
     if (fromPortal) portalCooldown = 1.2;
@@ -94,16 +153,10 @@
       const res  = await fetch('map.json?_=' + Date.now());
       if (!res.ok) throw new Error('no map');
       const data = await res.json();
-
       if (data.version === 2 && Array.isArray(data.scenes) && data.scenes.length) {
         scenes = data.scenes;
       } else {
-        // v1 compat — wrap flat objects into single scene
-        scenes = [{
-          id: 1, name: 'сцена 1',
-          spawnPoint: { x: 640, y: 360 },
-          objects: data.objects || []
-        }];
+        scenes = [{ id:1, name:'сцена 1', spawnPoint:{x:640,y:360}, objects: data.objects || [] }];
       }
     } catch {
       scenes = [{ id:1, name:'сцена 1', spawnPoint:{x:640,y:360}, objects:[] }];
@@ -111,19 +164,234 @@
   }
 
   /* ─────────────────────────────────────
-     AUDIO
+     AUDIO – background
   ───────────────────────────────────── */
-  const audio = document.getElementById('bg-audio');
-  function tryPlayAudio() { audio.play().catch(()=>{}); }
+  const bgAudio = document.getElementById('bg-audio');
+  function tryPlayAudio() { bgAudio.play().catch(()=>{}); }
   tryPlayAudio();
   document.addEventListener('keydown',   tryPlayAudio, { once:true });
   document.addEventListener('pointerdown', tryPlayAudio, { once:true });
+
+  /* ─────────────────────────────────────
+     AUDIO – typing sound pool
+  ───────────────────────────────────── */
+  const SYM_POOL_SIZE = 6;
+  const symPool = Array.from({ length: SYM_POOL_SIZE }, () => {
+    const a = new Audio('sym_00.mp3');
+    a.volume = 0.45;
+    return a;
+  });
+  let symPoolIdx = 0;
+  const SILENT_CHARS = new Set([' ', '\n', '\t', '.', ',', '!', '?', '…', '—', '-']);
+
+  function playTypeSound() {
+    const a = symPool[symPoolIdx++ % SYM_POOL_SIZE];
+    a.currentTime = 0;
+    a.play().catch(() => {});
+  }
 
   /* ─────────────────────────────────────
      SPRITE
   ───────────────────────────────────── */
   const spriteSheet = new Image();
   spriteSheet.src   = 'players.png';
+
+  /* ─────────────────────────────────────
+     INVENTORY
+  ───────────────────────────────────── */
+  const inventory = {};  // keyTag → count
+
+  /* ─────────────────────────────────────
+     DIALOG SYSTEM
+  ───────────────────────────────────── */
+  const dlgBox      = document.getElementById('dialog-box');
+  const dlgText     = document.getElementById('dialog-text');
+  const dlgChoices  = document.getElementById('dialog-choices');
+  const dlgContinue = document.getElementById('dialog-continue');
+  const iPrompt     = document.getElementById('interact-prompt');
+  const keyHud      = document.getElementById('key-hud');
+
+  let dlg = null;
+  // null | { text, shown, charIdx, charTimer, done, choices, choiceIdx, onClose }
+  const CHAR_DELAY = 0.038;  // seconds per char
+
+  function openTextDialog(text, onClose) {
+    dlg = { text: text||'', shown:'', charIdx:0, charTimer:0, done:false,
+            choices:null, choiceIdx:0, onClose: onClose||null };
+    _dlgShowBox();
+  }
+
+  function openChoiceDialog(text, choices, onClose) {
+    dlg = { text: text||'', shown:'', charIdx:0, charTimer:0, done:false,
+            choices, choiceIdx:0, onClose: onClose||null };
+    _dlgShowBox();
+  }
+
+  function _dlgShowBox() {
+    dlgBox.style.display  = 'block';
+    dlgChoices.style.display  = 'none';
+    dlgContinue.style.display = 'none';
+    dlgText.textContent = '';
+    iPrompt.style.display = 'none';
+  }
+
+  function _renderChoices() {
+    dlgChoices.innerHTML = '';
+    dlg.choices.forEach((c, i) => {
+      const div = document.createElement('div');
+      div.className = 'd-choice' + (i === dlg.choiceIdx ? ' sel' : '');
+      div.textContent = c.label;
+      div.addEventListener('click', () => { dlg.choiceIdx = i; _confirmChoice(); });
+      dlgChoices.appendChild(div);
+    });
+    dlgChoices.style.display = 'flex';
+    dlgContinue.style.display = 'none';
+  }
+
+  function _confirmChoice() {
+    if (!dlg || !dlg.choices) return;
+    const action = dlg.choices[dlg.choiceIdx].action;
+    closeDialog();
+    if (action) action();
+  }
+
+  function closeDialog() {
+    if (dlg?.onClose) dlg.onClose();
+    dlg = null;
+    dlgBox.style.display = 'none';
+    updateKeyHUD();
+  }
+
+  function _skipTyping() {
+    if (!dlg) return;
+    dlg.shown   = dlg.text;
+    dlg.charIdx = dlg.text.length;
+    dlg.done    = true;
+    dlgText.textContent = dlg.shown;
+    if (dlg.choices) { _renderChoices(); }
+    else { dlgContinue.style.display = 'block'; }
+  }
+
+  function dialogUpdate(dt) {
+    if (!dlg || dlg.done) return;
+    dlg.charTimer += dt;
+    while (dlg.charTimer >= CHAR_DELAY && dlg.charIdx < dlg.text.length) {
+      dlg.charTimer -= CHAR_DELAY;
+      const ch = dlg.text[dlg.charIdx++];
+      dlg.shown += ch;
+      if (!SILENT_CHARS.has(ch)) playTypeSound();
+    }
+    // Update DOM text + cursor
+    dlgText.textContent = dlg.shown;
+    if (dlg.charIdx < dlg.text.length) {
+      const cur = document.createElement('span');
+      cur.id = 'dialog-cursor';
+      dlgText.appendChild(cur);
+    } else {
+      dlg.done = true;
+      if (dlg.choices) { _renderChoices(); }
+      else { dlgContinue.style.display = 'block'; }
+    }
+  }
+
+  function handleDialogKey(key) {
+    if (!dlg) return false;
+    if (!dlg.done) {
+      if (key === 'e' || key === 'E' || key === 'Enter' || key === ' ') _skipTyping();
+      return true;
+    }
+    if (dlg.choices) {
+      if (key === 'ArrowLeft'  || key === 'a' || key === 'A') { dlg.choiceIdx = Math.max(0, dlg.choiceIdx-1); _renderChoices(); }
+      else if (key === 'ArrowRight' || key === 'd' || key === 'D') { dlg.choiceIdx = Math.min(dlg.choices.length-1, dlg.choiceIdx+1); _renderChoices(); }
+      else if (key === 'e' || key === 'E' || key === 'Enter') _confirmChoice();
+    } else {
+      if (key === 'e' || key === 'E' || key === 'Enter' || key === ' ') closeDialog();
+    }
+    return true;
+  }
+
+  /* ─────────────────────────────────────
+     INTERACTION SYSTEM
+  ───────────────────────────────────── */
+  const INTERACT_EXTRA = 20;  // extra px range beyond hitbox
+  const INTERACT_TYPES = new Set(['interaction', 'key', 'lock']);
+
+  function findNearInteractable() {
+    const scene = currentScene(); if (!scene) return null;
+    const hb = playerHitbox(px, py);
+    const range = {
+      x: hb.x - INTERACT_EXTRA, y: hb.y - INTERACT_EXTRA,
+      w: hb.w + INTERACT_EXTRA*2, h: hb.h + INTERACT_EXTRA*2
+    };
+    for (const obj of scene.objects || []) {
+      if (INTERACT_TYPES.has(obj.type) && rectsOverlap(range, obj)) return obj;
+    }
+    return null;
+  }
+
+  function triggerInteraction() {
+    if (dlg) return;
+    const obj = findNearInteractable();
+    if (!obj) return;
+
+    if (obj.type === 'interaction') {
+      openTextDialog(obj.dialogText || '...');
+
+    } else if (obj.type === 'key') {
+      openChoiceDialog(obj.pickupText || 'Подобрать?', [
+        { label: 'Да', action: () => {
+          const tag = obj.keyTag || 'ключ';
+          inventory[tag] = (inventory[tag] || 0) + 1;
+          const sc = currentScene();
+          if (sc) sc.objects = sc.objects.filter(o => o.id !== obj.id);
+          updateKeyHUD();
+        }},
+        { label: 'Нет', action: () => {} }
+      ]);
+
+    } else if (obj.type === 'lock') {
+      const tag  = obj.requiredKeyTag || 'ключ';
+      const need = Math.max(1, obj.requiredCount || 1);
+      if ((inventory[tag] || 0) >= need) {
+        inventory[tag] -= need;
+        updateKeyHUD();
+        const sc = currentScene();
+        openTextDialog(obj.unlockText || 'Открыто!', () => {
+          if (sc) sc.objects = sc.objects.filter(o => o.id !== obj.id);
+        });
+      } else {
+        openTextDialog(obj.lockedText || 'Заперто.');
+      }
+    }
+  }
+
+  function updateInteractPrompt() {
+    if (dlg) { iPrompt.style.display = 'none'; return; }
+    const obj = findNearInteractable();
+    if (obj) {
+      const cx = Math.round(px + SPRITE_W * SCALE / 2);
+      const cy = Math.round(py);
+      iPrompt.style.left = cx + 'px';
+      iPrompt.style.top  = (cy - 26) + 'px';
+      iPrompt.style.display = 'block';
+    } else {
+      iPrompt.style.display = 'none';
+    }
+  }
+
+  /* ─────────────────────────────────────
+     KEY HUD
+  ───────────────────────────────────── */
+  function updateKeyHUD() {
+    keyHud.innerHTML = '';
+    for (const [tag, count] of Object.entries(inventory)) {
+      if ((count || 0) <= 0) continue;
+      const div = document.createElement('div');
+      div.className = 'key-hud-entry';
+      div.textContent = tag + ' × ' + count;
+      keyHud.appendChild(div);
+    }
+  }
 
   /* ─────────────────────────────────────
      LOGIN
@@ -235,6 +503,13 @@
   /* ─────────────────────────────────────
      DRAW MAP
   ───────────────────────────────────── */
+  const TYPE_COLORS = {
+    portal:      '#aa44ff',
+    interaction: '#ffaa00',
+    key:         '#00ff88',
+    lock:        '#ff6600'
+  };
+
   function hexToRgba(hex, a) {
     hex = (hex||'#888888').replace('#','');
     if (hex.length===3) hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
@@ -257,7 +532,7 @@
         ctx.globalAlpha = alpha;
         ctx.drawImage(img, obj.x, obj.y, obj.w, obj.h);
       } else {
-        ctx.fillStyle = hexToRgba(obj.color || (obj.type==='portal'?'#aa44ff':'#33aaff'), alpha);
+        ctx.fillStyle = hexToRgba(obj.color || TYPE_COLORS[obj.type] || '#33aaff', alpha);
         ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
       }
       ctx.globalAlpha = 1;
@@ -277,7 +552,6 @@
     loginScreen.style.display = 'none';
     gameScreen.style.display  = 'block';
     resizeCanvas(); resizeScanlines();
-    // Start at first scene
     if (scenes.length) activateScene(scenes[0].id, false);
     requestAnimationFrame(gameLoop);
   }
@@ -291,6 +565,19 @@
      INPUT
   ───────────────────────────────────── */
   window.addEventListener('keydown', e => {
+    // Dialog consumes input first
+    if (dlg) {
+      handleDialogKey(e.key);
+      e.preventDefault();
+      return;
+    }
+
+    // E = interact
+    if (e.key === 'e' || e.key === 'E') {
+      triggerInteraction();
+      return;
+    }
+
     keys[e.key] = true;
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
   });
@@ -300,33 +587,30 @@
      GAME LOOP
   ───────────────────────────────────── */
   const fadeEl = document.getElementById('fade-overlay');
-
-  function setFadeOverlay(alpha) {
-    fadeEl.style.opacity = alpha;
-  }
+  function setFadeOverlay(alpha) { fadeEl.style.opacity = alpha; }
 
   function gameLoop(ts) {
     if (lastTs === null) lastTs = ts;
     const dt = Math.min((ts - lastTs) / 1000, 0.1);
     lastTs = ts;
 
+    /* ── DIALOG UPDATE ── */
+    dialogUpdate(dt);
+
     /* ── TRANSITION FADE ── */
     if (fadePhase === 'out') {
       fadeAlpha = Math.min(1, fadeAlpha + dt * FADE_SPEED);
       setFadeOverlay(fadeAlpha);
-      if (fadeAlpha >= 1) {
-        activateScene(pendingScene, true);
-        fadePhase = 'in';
-      }
+      if (fadeAlpha >= 1) { activateScene(pendingScene, true); fadePhase = 'in'; }
     } else if (fadePhase === 'in') {
       fadeAlpha = Math.max(0, fadeAlpha - dt * FADE_SPEED);
       setFadeOverlay(fadeAlpha);
       if (fadeAlpha <= 0) { fadePhase = 'idle'; pendingScene = null; }
     }
 
-    /* ── MOVEMENT (blocked during out-phase) ── */
+    /* ── MOVEMENT (blocked during dialog or out-fade) ── */
     let dx = 0, dy = 0;
-    if (fadePhase !== 'out') {
+    if (fadePhase !== 'out' && !dlg) {
       if (keys['ArrowLeft']  || keys['a'] || keys['A']) { dx -= 1; facingLeft = false; }
       if (keys['ArrowRight'] || keys['d'] || keys['D']) { dx += 1; facingLeft = false; }
       if (keys['ArrowUp']    || keys['w'] || keys['W']) dy -= 1;
@@ -345,8 +629,11 @@
     const resolved = resolveCollisions(clampedX, clampedY, px, py);
     px = resolved.x; py = resolved.y;
 
-    /* ── PORTAL CHECK ── */
-    checkPortals(dt);
+    /* ── PORTAL CHECK (blocked during dialog) ── */
+    if (!dlg) checkPortals(dt);
+
+    /* ── INTERACT PROMPT ── */
+    updateInteractPrompt();
 
     /* ── ANIMATION ── */
     if (isMoving) {
@@ -356,8 +643,7 @@
 
     /* ── DRAW ── */
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    drawLayer(true);   // bg objects (z <= 0)
+    drawLayer(true);
 
     const srcX = charIndex * SPRITE_W;
     const srcY = isMoving ? (1 + walkFrame) * SPRITE_H : 0;
@@ -372,8 +658,7 @@
     }
     ctx.restore();
 
-    drawLayer(false);  // fg objects (z > 0)
-
+    drawLayer(false);
     drawScanlines();
     requestAnimationFrame(gameLoop);
   }

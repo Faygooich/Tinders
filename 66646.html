@@ -11,6 +11,7 @@
     :root{
       --bg:#0a0a0a; --panel:#111; --border:#222; --accent:#c8ff00;
       --red:#ff3333; --blue:#33aaff; --purple:#aa44ff; --green:#00ff88;
+      --orange:#ffaa00; --keyc:#00ff88; --lockc:#ff6600;
       --dim:#444; --text:#ccc; --text-dim:#555; --font:'CustomFont',monospace;
     }
 
@@ -27,6 +28,7 @@
     }
     .tool-btn:hover{ border-color:var(--dim); color:var(--text); }
     .tool-btn.active{ border-color:var(--accent); color:var(--accent); background:rgba(200,255,0,.05); }
+    .tool-btn.action:hover{ border-color:var(--accent); color:var(--accent); }
     .tool-sep{ width:24px; height:1px; background:var(--border); margin:4px 0; }
     .tool-btn[title]:hover::after{
       content:attr(title); position:absolute; left:44px; top:50%; transform:translateY(-50%);
@@ -56,6 +58,7 @@
     }
     .prop-input:focus{ border-color:var(--accent); }
     .prop-input[type=color]{ padding:1px 2px; width:34px; height:22px; cursor:pointer; flex-shrink:0; }
+    textarea.prop-input{ resize:vertical; line-height:1.5; min-height:52px; }
     .prop-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px; }
     .prop-grid2 .prop-row{ margin:0; }
 
@@ -108,9 +111,12 @@
     .layer-item:hover .layer-del{ opacity:1; }
 
     .type-tag{ font-size:8px; letter-spacing:2px; padding:1px 4px; border:1px solid; flex-shrink:0; }
-    .type-tag.collider{ border-color:var(--red);    color:var(--red);    }
-    .type-tag.portal  { border-color:var(--purple); color:var(--purple); }
-    .type-tag.object  { border-color:var(--blue);   color:var(--blue);   }
+    .type-tag.collider    { border-color:var(--red);    color:var(--red);    }
+    .type-tag.portal      { border-color:var(--purple); color:var(--purple); }
+    .type-tag.object      { border-color:var(--blue);   color:var(--blue);   }
+    .type-tag.interaction { border-color:var(--orange); color:var(--orange); }
+    .type-tag.key         { border-color:var(--keyc);   color:var(--keyc);   }
+    .type-tag.lock        { border-color:var(--lockc);  color:var(--lockc);  }
 
     .act-btn{
       width:100%; padding:7px 0; background:transparent; border:1px solid var(--border);
@@ -147,7 +153,6 @@
       padding:6px 16px; pointer-events:none; z-index:50; opacity:0; transition:opacity .3s;
     }
 
-    /* scene add btn inline */
     #scene-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     #btn-add-scene{
       background:none; border:1px solid var(--border); color:var(--text-dim);
@@ -155,48 +160,108 @@
       cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .1s; line-height:1;
     }
     #btn-add-scene:hover{ border-color:var(--accent); color:var(--accent); }
+
+    /* clipboard flash */
+    #clipboard-flash{
+      position:absolute; top:14px; left:50%; transform:translateX(-50%);
+      background:rgba(200,255,0,.08); border:1px solid var(--dim);
+      color:var(--dim); font-size:9px; letter-spacing:3px;
+      padding:5px 14px; pointer-events:none; z-index:50; opacity:0; transition:opacity .3s;
+    }
   </style>
 </head>
 <body>
 
 <!-- TOOLBAR -->
 <div id="toolbar">
-  <button class="tool-btn active" id="btn-select"   title="выбор [V]">
+  <!-- SELECT -->
+  <button class="tool-btn active" id="btn-select" title="выбор [V]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2l10 6-5 1-3 5z" stroke="currentColor" stroke-width="1.2"/></svg>
   </button>
+  <!-- COLLIDER -->
   <button class="tool-btn" id="btn-collider" title="коллайдер [C]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/></svg>
   </button>
-  <button class="tool-btn" id="btn-portal"   title="портал [P]">
+  <!-- PORTAL -->
+  <button class="tool-btn" id="btn-portal" title="портал [P]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="4" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>
       <path d="M7 8h4M9 6l2 2-2 2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="btn-object"   title="объект [O]">
+  <!-- OBJECT -->
+  <button class="tool-btn" id="btn-object" title="объект [O]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <rect x="3" y="3" width="10" height="10" stroke="currentColor" stroke-width="1.2"/>
       <line x1="8" y1="3" x2="8" y2="13" stroke="currentColor" stroke-width=".8"/>
       <line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width=".8"/>
     </svg>
   </button>
-  <button class="tool-btn" id="btn-spawn"    title="точка спавна [S]">
+  <div class="tool-sep"></div>
+  <!-- INTERACTION -->
+  <button class="tool-btn" id="btn-interaction" title="интеракция [I]">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2 3h12v7H9.5L7 13v-3H2z" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="5" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="5" y1="5.5" x2="9" y2="5.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <!-- KEY -->
+  <button class="tool-btn" id="btn-key" title="ключ [K]">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="5.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="8.5" y1="7.5" x2="14" y2="7.5" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="12.5" y1="7.5" x2="12.5" y2="9.5" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="11" y1="7.5" x2="11" y2="10" stroke="currentColor" stroke-width="1.2"/>
+    </svg>
+  </button>
+  <!-- LOCK -->
+  <button class="tool-btn" id="btn-lock" title="замок [L]">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="3" y="8" width="10" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M5 8V5.5a3 3 0 0 1 6 0V8" stroke="currentColor" stroke-width="1.2"/>
+      <circle cx="8" cy="11" r="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <div class="tool-sep"></div>
+  <!-- SPAWN -->
+  <button class="tool-btn" id="btn-spawn" title="точка спавна [S]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M8 2L9.8 6.2L14 7L10.7 10.2L11.6 14.5L8 12.5L4.4 14.5L5.3 10.2L2 7L6.2 6.2Z" stroke="currentColor" stroke-width="1.1" fill="none"/>
     </svg>
   </button>
-  <div class="tool-sep"></div>
-  <button class="tool-btn" id="btn-move"     title="рука [H]">
+  <!-- MOVE -->
+  <button class="tool-btn" id="btn-move" title="рука [H]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2v7M6 2c0-1 1.5-1 1.5 0v5M7.5 7V3c0-1 1.5-1 1.5 0v4M9 7V4c0-1 1.5-1 1.5 0v5M4.5 8V5c0-1-1.5-1-1.5 0v4c0 3 4 5 6 3" stroke="currentColor" stroke-width="1.1"/></svg>
   </button>
   <div class="tool-sep"></div>
-  <button class="tool-btn" id="btn-undo"     title="отменить [Ctrl+Z]">
+  <!-- COPY (action, not tool) -->
+  <button class="tool-btn action" id="btn-copy" title="копировать [Ctrl+C]">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="5" y="1" width="9" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/>
+      <rect x="2" y="5" width="9" height="10" rx="1" stroke="currentColor" stroke-width="1.2" fill="#111"/>
+    </svg>
+  </button>
+  <!-- PASTE (action, not tool) -->
+  <button class="tool-btn action" id="btn-paste" title="вставить [Ctrl+V]">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="4" y="4" width="8" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/>
+      <rect x="5.5" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.2" fill="#111"/>
+      <line x1="7" y1="9"  x2="9"  y2="9"  stroke="currentColor" stroke-width="1.1"/>
+      <line x1="7" y1="11" x2="10" y2="11" stroke="currentColor" stroke-width="1.1"/>
+    </svg>
+  </button>
+  <div class="tool-sep"></div>
+  <!-- UNDO -->
+  <button class="tool-btn" id="btn-undo" title="отменить [Ctrl+Z]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 1 0 1.5-3.5L2 3" stroke="currentColor" stroke-width="1.2"/><polyline points="2,1 2,4 5,4" stroke="currentColor" stroke-width="1.2"/></svg>
   </button>
-  <button class="tool-btn" id="btn-redo"     title="повторить [Ctrl+Y]">
+  <!-- REDO -->
+  <button class="tool-btn" id="btn-redo" title="повторить [Ctrl+Y]">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 8a5 5 0 1 1-1.5-3.5L14 3" stroke="currentColor" stroke-width="1.2"/><polyline points="14,1 14,4 11,4" stroke="currentColor" stroke-width="1.2"/></svg>
   </button>
   <div class="tool-sep"></div>
+  <!-- ZOOM -->
   <button class="tool-btn" id="btn-zoom-in"  title="приблизить [+]">
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><line x1="6" y1="4" x2="6" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="6" x2="8" y2="6" stroke="currentColor" stroke-width="1.2"/><line x1="9.2" y1="9.2" x2="12" y2="12" stroke="currentColor" stroke-width="1.2"/></svg>
   </button>
@@ -216,8 +281,9 @@
     <span id="zoom-display">100%</span>
     <span id="count-display">0 объектов</span>
   </div>
-  <div id="hint">v·c·p·o·s·h — инструменты · del — удалить · ctrl+s — сохранить</div>
+  <div id="hint">v·c·p·o·i·k·l·s·h — инструменты · ctrl+c/v — копировать/вставить · ctrl+s — сохранить</div>
   <div id="save-flash">map.json сохранён</div>
+  <div id="clipboard-flash">скопировано</div>
 </div>
 
 <!-- RIGHT PANEL -->
@@ -233,7 +299,7 @@
   </div>
 
   <!-- PROPERTIES -->
-  <div class="panel-section" style="overflow-y:auto; max-height:46vh; flex-shrink:0;">
+  <div class="panel-section" style="overflow-y:auto; max-height:54vh; flex-shrink:0;">
     <div class="panel-title">свойства</div>
     <div id="props-empty" style="font-size:10px;color:var(--text-dim);letter-spacing:2px;">ничего не выбрано</div>
     <div id="props-form" style="display:none">
@@ -279,6 +345,46 @@
         <input type="file" id="tex-file" accept="image/*" style="display:none">
       </div>
 
+      <!-- ── INTERACTION PROPERTIES ── -->
+      <div id="interaction-section" style="display:none; margin-top:8px;">
+        <div class="panel-title" style="margin-bottom:6px; color:var(--orange);">диалог</div>
+        <textarea class="prop-input" id="p-dialog-text" rows="3" placeholder="текст диалога..."></textarea>
+      </div>
+
+      <!-- ── KEY PROPERTIES ── -->
+      <div id="key-section" style="display:none; margin-top:8px;">
+        <div class="panel-title" style="margin-bottom:6px; color:var(--keyc);">ключ</div>
+        <div class="prop-row">
+          <span class="prop-label">тег</span>
+          <input class="prop-input" id="p-key-tag" type="text" placeholder="ключ">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">текст</span>
+          <input class="prop-input" id="p-pickup-text" type="text" placeholder="Подобрать?">
+        </div>
+      </div>
+
+      <!-- ── LOCK PROPERTIES ── -->
+      <div id="lock-section" style="display:none; margin-top:8px;">
+        <div class="panel-title" style="margin-bottom:6px; color:var(--lockc);">замок</div>
+        <div class="prop-row">
+          <span class="prop-label">тег</span>
+          <input class="prop-input" id="p-req-key-tag" type="text" placeholder="ключ">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">кол-во</span>
+          <input class="prop-input" id="p-req-count" type="number" min="1" value="1" style="width:60px;">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">открыто</span>
+          <input class="prop-input" id="p-unlock-text" type="text" placeholder="Открыто!">
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">заперто</span>
+          <input class="prop-input" id="p-locked-text" type="text" placeholder="Заперто.">
+        </div>
+      </div>
+
       <button class="act-btn danger" id="btn-delete-sel" style="margin-top:8px;">удалить</button>
     </div>
   </div>
@@ -319,33 +425,25 @@ ctx.imageSmoothingEnabled = false;
 let worldW = 1280, worldH = 720;
 let camX = 0, camY = 0, zoom = 1;
 
-// Scenes
-let scenes       = [{ id:1, name:'сцена 1', spawnPoint:{x:640,y:360}, objects:[] }];
+let scenes        = [{ id:1, name:'сцена 1', spawnPoint:{x:640,y:360}, objects:[] }];
 let activeSceneId = 1;
-let nextSceneId  = 2;
-let nextObjId    = 1;
-let texCache     = {};  // objId -> Image
+let nextSceneId   = 2;
+let nextObjId     = 1;
+let texCache      = {};
+let clipboard     = null;  // copy/paste
 
-const getScene  = (id = activeSceneId) => scenes.find(s => s.id === id);
-const getObjs   = ()  => getScene()?.objects ?? [];
+const getScene = (id = activeSceneId) => scenes.find(s => s.id === id);
+const getObjs  = () => getScene()?.objects ?? [];
 
-// Selection & tools
 let selectedId = null;
 let tool       = 'select';
 
-// Drawing state
 let drawing = false, drawStart = null, drawCurrent = null;
 let panning = false, panStart  = null, camAtPan = null;
 let dragging = false, dragStart = null, objAtDrag = null;
 let resizing = false, resizeHandle = null, resizeStart = null, objAtResize = null;
-
-// Spawn preview (when spawn tool active)
 let mouseWorld = null;
-
-// Grid
 let gridSize = 32, showGrid = true, snapGrid = true;
-
-// Undo/redo
 let history = [], future = [];
 
 /* ══════════════════════════════════════════════════
@@ -397,13 +495,11 @@ function render() {
   ctx.fillStyle='#0d0d0d';
   ctx.fillRect(camX,camY,worldW*zoom,worldH*zoom);
 
-  // scanline hint
   if (zoom > 0.2) {
     ctx.fillStyle='rgba(255,255,255,0.012)';
     for (let y=0;y<worldH;y+=4) ctx.fillRect(camX,camY+y*zoom,worldW*zoom,1);
   }
 
-  // grid
   if (showGrid && zoom>0.15) {
     ctx.strokeStyle='#191919'; ctx.lineWidth=0.5;
     for (let wx=0;wx<=worldW;wx+=gridSize) {
@@ -419,21 +515,22 @@ function render() {
   ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=1;
   ctx.strokeRect(camX,camY,worldW*zoom,worldH*zoom);
 
-  // objects sorted by z
   const sorted = [...getObjs()].sort((a,b)=>(a.z||0)-(b.z||0));
   for (const obj of sorted) drawObj(obj, obj.id===selectedId);
 
-  // spawn point
   const scene = getScene();
   if (scene) drawSpawn(scene.spawnPoint, false);
   if (tool==='spawn' && mouseWorld) drawSpawn({x:snap(mouseWorld.x), y:snap(mouseWorld.y)}, true);
 
-  // draw preview
   if (drawing && drawStart && drawCurrent) {
     const rx=Math.min(drawStart.x,drawCurrent.x), ry=Math.min(drawStart.y,drawCurrent.y);
     const rw=Math.abs(drawCurrent.x-drawStart.x), rh=Math.abs(drawCurrent.y-drawStart.y);
     const sx=camX+rx*zoom, sy=camY+ry*zoom, sw=rw*zoom, sh=rh*zoom;
-    const col = tool==='collider' ? '#ff3333' : tool==='portal' ? '#aa44ff' : '#33aaff';
+    const colMap = {
+      collider:'#ff3333', portal:'#aa44ff', object:'#33aaff',
+      interaction:'#ffaa00', key:'#00ff88', lock:'#ff6600'
+    };
+    const col = colMap[tool] || '#33aaff';
     ctx.fillStyle=col+'22'; ctx.fillRect(sx,sy,sw,sh);
     ctx.strokeStyle=col; ctx.lineWidth=1;
     ctx.setLineDash(tool!=='object'?[4,3]:[]);
@@ -452,10 +549,13 @@ function drawObj(obj, selected) {
   const sx=camX+obj.x*zoom, sy=camY+obj.y*zoom;
   const sw=obj.w*zoom, sh=obj.h*zoom;
 
-  const defaultAlpha = obj.type==='collider'?0.3 : obj.type==='portal'?0.2 : 0.7;
-  const alpha = obj.opacity ?? defaultAlpha;
-  const defaultColor = obj.type==='collider'?'#ff3333' : obj.type==='portal'?'#aa44ff' : '#33aaff';
-  const col = obj.color || defaultColor;
+  const defaultAlphaMap = { collider:0.3, portal:0.2, object:0.7, interaction:0.22, key:0.45, lock:0.35 };
+  const alpha = obj.opacity ?? (defaultAlphaMap[obj.type] ?? 0.7);
+  const defaultColorMap = {
+    collider:'#ff3333', portal:'#aa44ff', object:'#33aaff',
+    interaction:'#ffaa00', key:'#00ff88', lock:'#ff6600'
+  };
+  const col = obj.color || defaultColorMap[obj.type] || '#33aaff';
 
   ctx.save();
 
@@ -484,25 +584,58 @@ function drawObj(obj, selected) {
     }
 
   } else if (obj.type === 'portal') {
-    // always show in editor with at least 0.18 alpha
     const dispAlpha = Math.max(alpha, 0.18);
     ctx.fillStyle=hexToRgba(col,dispAlpha); ctx.fillRect(sx,sy,sw,sh);
     ctx.strokeStyle=col; ctx.lineWidth=selected?1.5:1;
     ctx.setLineDash([3,3]); ctx.strokeRect(sx+.5,sy+.5,sw-1,sh-1); ctx.setLineDash([]);
-
-    // arrow in center
     const cx=sx+sw/2, cy=sy+sh/2;
     const ar=Math.min(sw,sh)*0.22;
     ctx.strokeStyle=col; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.moveTo(cx-ar,cy); ctx.lineTo(cx+ar,cy); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx+ar*.45,cy-ar*.45); ctx.lineTo(cx+ar,cy); ctx.lineTo(cx+ar*.45,cy+ar*.45); ctx.stroke();
-
-    // target label
     if (zoom>0.25&&sw>24) {
       const target = scenes.find(s=>s.id===obj.targetSceneId);
       const lbl    = target ? `→ ${target.name}` : '→ ?';
       ctx.fillStyle=col; ctx.font=`${Math.max(8,9*zoom)}px monospace`;
       ctx.globalAlpha=0.9; ctx.fillText(lbl,sx+3,sy+11); ctx.globalAlpha=1;
+    }
+
+  } else if (obj.type === 'interaction') {
+    const dispAlpha = Math.max(alpha, 0.15);
+    ctx.fillStyle=hexToRgba(col,dispAlpha); ctx.fillRect(sx,sy,sw,sh);
+    ctx.strokeStyle=selected?'#c8ff00':col; ctx.lineWidth=selected?1.5:1;
+    ctx.setLineDash([3,2]); ctx.strokeRect(sx+.5,sy+.5,sw-1,sh-1); ctx.setLineDash([]);
+    if (zoom>0.25&&sw>22) {
+      ctx.fillStyle=col; ctx.font=`${Math.max(8,9*zoom)}px monospace`;
+      ctx.globalAlpha=0.85;
+      ctx.fillText('💬 '+(obj.name||'interaction'), sx+3, sy+11);
+      ctx.globalAlpha=1;
+    }
+
+  } else if (obj.type === 'key') {
+    const dispAlpha = Math.max(alpha, 0.2);
+    ctx.fillStyle=hexToRgba(col,dispAlpha); ctx.fillRect(sx,sy,sw,sh);
+    ctx.strokeStyle=selected?'#c8ff00':col; ctx.lineWidth=selected?1.5:1;
+    ctx.strokeRect(sx+.5,sy+.5,sw-1,sh-1);
+    if (zoom>0.25&&sw>22) {
+      ctx.fillStyle=col; ctx.font=`${Math.max(8,9*zoom)}px monospace`;
+      ctx.globalAlpha=0.9;
+      ctx.fillText('⚿ '+(obj.keyTag||obj.name||'key'), sx+3, sy+11);
+      ctx.globalAlpha=1;
+    }
+
+  } else if (obj.type === 'lock') {
+    const dispAlpha = Math.max(alpha, 0.2);
+    ctx.fillStyle=hexToRgba(col,dispAlpha); ctx.fillRect(sx,sy,sw,sh);
+    ctx.strokeStyle=selected?'#c8ff00':col; ctx.lineWidth=selected?1.5:1;
+    ctx.setLineDash([4,2]); ctx.strokeRect(sx+.5,sy+.5,sw-1,sh-1); ctx.setLineDash([]);
+    if (zoom>0.25&&sw>22) {
+      ctx.fillStyle=col; ctx.font=`${Math.max(8,9*zoom)}px monospace`;
+      ctx.globalAlpha=0.9;
+      const tag = obj.requiredKeyTag||'key';
+      const cnt = obj.requiredCount||1;
+      ctx.fillText('🔒 '+tag+(cnt>1?'×'+cnt:''), sx+3, sy+11);
+      ctx.globalAlpha=1;
     }
   }
 
@@ -527,11 +660,9 @@ function drawSpawn(sp, preview) {
   ctx.strokeStyle='#00ff88'; ctx.lineWidth=1.2;
   ctx.fillStyle=preview?'rgba(0,255,136,0.08)':'rgba(0,255,136,0.15)';
   ctx.globalAlpha=preview?0.55:1;
-  // diamond
   ctx.beginPath();
   ctx.moveTo(sx,sy-size); ctx.lineTo(sx+size,sy); ctx.lineTo(sx,sy+size); ctx.lineTo(sx-size,sy);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  // crosshair
   ctx.beginPath();
   ctx.moveTo(sx-size*.45,sy); ctx.lineTo(sx+size*.45,sy);
   ctx.moveTo(sx,sy-size*.45); ctx.lineTo(sx,sy+size*.45);
@@ -581,7 +712,6 @@ canvas.addEventListener('mousedown', e => {
   }
   if (e.button!==0) return;
 
-  // SPAWN TOOL — click to place
   if (tool==='spawn') {
     saveHistory();
     getScene().spawnPoint = { x:snap(wp.x), y:snap(wp.y) };
@@ -604,7 +734,8 @@ canvas.addEventListener('mousedown', e => {
     updateProps(); updateLayers(); render(); return;
   }
 
-  if (['collider','portal','object'].includes(tool)) {
+  const drawTypes = ['collider','portal','object','interaction','key','lock'];
+  if (drawTypes.includes(tool)) {
     drawing=true;
     drawStart={x:snap(wp.x),y:snap(wp.y)};
     drawCurrent={...drawStart};
@@ -657,9 +788,12 @@ canvas.addEventListener('mouseup', () => {
     if (rw>=4&&rh>=4) {
       saveHistory();
       const defaults = {
-        collider: {color:'#ff3333', opacity:0.3,  z:10},
-        portal:   {color:'#aa44ff', opacity:0,    z:5 },
-        object:   {color:'#33aaff', opacity:0.7,  z:0 },
+        collider:    {color:'#ff3333', opacity:0.3,  z:10},
+        portal:      {color:'#aa44ff', opacity:0,    z:5 },
+        object:      {color:'#33aaff', opacity:0.7,  z:0 },
+        interaction: {color:'#ffaa00', opacity:0.22, z:1 },
+        key:         {color:'#00ff88', opacity:0.45, z:1 },
+        lock:        {color:'#ff6600', opacity:0.35, z:1 },
       };
       const d = defaults[tool]||defaults.object;
       const obj = {
@@ -668,7 +802,10 @@ canvas.addEventListener('mouseup', () => {
         x:rx,y:ry,w:rw,h:rh,
         color:d.color, opacity:d.opacity, z:d.z,
         texture:null,
-        ...(tool==='portal'?{targetSceneId:null}:{})
+        ...(tool==='portal'      ? {targetSceneId:null} : {}),
+        ...(tool==='interaction' ? {dialogText:''}      : {}),
+        ...(tool==='key'         ? {keyTag:'ключ', pickupText:'Подобрать?'} : {}),
+        ...(tool==='lock'        ? {requiredKeyTag:'ключ', requiredCount:1, unlockText:'Открыто!', lockedText:'Заперто.'} : {})
       };
       getObjs().push(obj);
       selectedId=obj.id; updateProps(); updateLayers();
@@ -686,15 +823,48 @@ canvas.addEventListener('wheel', e => {
 },{passive:false});
 
 /* ══════════════════════════════════════════════════
+   COPY / PASTE
+══════════════════════════════════════════════════ */
+function copySelected() {
+  const sel = getObjs().find(o=>o.id===selectedId);
+  if (!sel) return;
+  clipboard = JSON.parse(JSON.stringify(sel));
+  const f = document.getElementById('clipboard-flash');
+  f.style.opacity='1'; setTimeout(()=>f.style.opacity='0', 1200);
+}
+
+function pasteClipboard() {
+  if (!clipboard) return;
+  saveHistory();
+  const obj = JSON.parse(JSON.stringify(clipboard));
+  obj.id   = nextObjId++;
+  obj.name = (obj.name||obj.type) + '_copy';
+  obj.x   += gridSize;
+  obj.y   += gridSize;
+  if (obj.texture) ensureTexture(obj);
+  getObjs().push(obj);
+  selectedId = obj.id;
+  updateProps(); updateLayers(); render();
+}
+
+/* ══════════════════════════════════════════════════
    KEYBOARD
 ══════════════════════════════════════════════════ */
 window.addEventListener('keydown', e => {
-  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA') return;
   const k=e.key;
+
+  // Copy/Paste (must check before tool shortcuts)
+  if(e.ctrlKey&&(k==='c'||k==='C')){e.preventDefault();copySelected();return;}
+  if(e.ctrlKey&&(k==='v'||k==='V')){e.preventDefault();pasteClipboard();return;}
+
   if(k==='v'||k==='V') setTool('select');
   if(k==='c'||k==='C') setTool('collider');
   if(k==='p'||k==='P') setTool('portal');
   if(k==='o'||k==='O') setTool('object');
+  if(k==='i'||k==='I') setTool('interaction');
+  if(k==='k'||k==='K') setTool('key');
+  if(k==='l'||k==='L') setTool('lock');
   if(k==='s'||k==='S') setTool('spawn');
   if(k==='h'||k==='H') setTool('move');
   if(k==='f'||k==='F') fitWorld();
@@ -717,7 +887,7 @@ window.addEventListener('keydown', e => {
 });
 
 let spaceDown=false;
-window.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target.tagName!=='INPUT'){e.preventDefault();if(!spaceDown){spaceDown=true;canvas.style.cursor='grab';}}});
+window.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();if(!spaceDown){spaceDown=true;canvas.style.cursor='grab';}}});
 window.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;canvas.style.cursor=tool==='select'?'default':'crosshair';}});
 canvas.addEventListener('mousedown',e=>{if(spaceDown&&e.button===0){panning=true;panStart={x:e.clientX,y:e.clientY};camAtPan={x:camX,y:camY};canvas.style.cursor='grabbing';}},true);
 
@@ -726,14 +896,18 @@ canvas.addEventListener('mousedown',e=>{if(spaceDown&&e.button===0){panning=true
 ══════════════════════════════════════════════════ */
 function setTool(t) {
   tool=t;
-  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
-  const map={select:'btn-select',collider:'btn-collider',portal:'btn-portal',object:'btn-object',spawn:'btn-spawn',move:'btn-move'};
+  document.querySelectorAll('.tool-btn:not(.action)').forEach(b=>b.classList.remove('active'));
+  const map={
+    select:'btn-select', collider:'btn-collider', portal:'btn-portal',
+    object:'btn-object', spawn:'btn-spawn', move:'btn-move',
+    interaction:'btn-interaction', key:'btn-key', lock:'btn-lock'
+  };
   if(map[t]) document.getElementById(map[t]).classList.add('active');
   const c={select:'default',move:'grab',spawn:'cell'};
   canvas.style.cursor=c[t]||'crosshair';
   render();
 }
-['select','collider','portal','object','spawn','move'].forEach(t=>
+['select','collider','portal','object','spawn','move','interaction','key','lock'].forEach(t=>
   document.getElementById('btn-'+t).addEventListener('click',()=>setTool(t))
 );
 document.getElementById('btn-zoom-in').addEventListener('click',()=>{zoom=Math.min(8,zoom*1.3);render();});
@@ -741,14 +915,15 @@ document.getElementById('btn-zoom-out').addEventListener('click',()=>{zoom=Math.
 document.getElementById('btn-zoom-fit').addEventListener('click',fitWorld);
 document.getElementById('btn-undo').addEventListener('click',undo);
 document.getElementById('btn-redo').addEventListener('click',redo);
+document.getElementById('btn-copy').addEventListener('click',copySelected);
+document.getElementById('btn-paste').addEventListener('click',pasteClipboard);
 
 /* ══════════════════════════════════════════════════
    UNDO / REDO
 ══════════════════════════════════════════════════ */
 function snapshotScenes() {
   return scenes.map(s=>({
-    ...s,
-    objects: s.objects.map(o=>({...o, texture:o.texture?'__tex__':null}))
+    ...s, objects: s.objects.map(o=>({...o, texture:o.texture?'__tex__':null}))
   }));
 }
 function saveHistory() {
@@ -757,8 +932,7 @@ function saveHistory() {
 }
 function restoreScenes(snap) {
   scenes=snap.map(s=>({
-    ...s,
-    objects:s.objects.map(o=>{
+    ...s, objects:s.objects.map(o=>{
       const live=scenes.find(sc=>sc.id===s.id)?.objects.find(lo=>lo.id===o.id);
       return{...o, texture:o.texture==='__tex__'?(live?.texture||null):null};
     })
@@ -793,13 +967,11 @@ function updateSceneList() {
         if (scenes.length<=1){alert('Нельзя удалить единственную сцену.');return;}
         if (!confirm(`Удалить «${sc.name}»?`)) return;
         saveHistory();
-        // remove portal refs to this scene
         for (const s of scenes) for (const o of s.objects) if(o.type==='portal'&&o.targetSceneId===sc.id) o.targetSceneId=null;
         scenes=scenes.filter(s=>s.id!==sc.id);
         if (activeSceneId===sc.id) { activeSceneId=scenes[0].id; selectedId=null; }
         updateSceneList(); updateLayers(); updateProps(); render(); return;
       }
-      // click on row = switch scene
       if (!ev.target.closest('[data-action]')) {
         activeSceneId=sc.id; selectedId=null;
         updateSceneList(); updateLayers(); updateProps(); render();
@@ -823,26 +995,34 @@ document.getElementById('btn-add-scene').addEventListener('click',()=>{
    PROPERTIES PANEL
 ══════════════════════════════════════════════════ */
 function updateProps() {
-  const form  =document.getElementById('props-form');
-  const empty =document.getElementById('props-empty');
-  const texSec=document.getElementById('tex-section');
-  const porSec=document.getElementById('portal-section');
-  const sel   =getObjs().find(o=>o.id===selectedId);
+  const form    = document.getElementById('props-form');
+  const empty   = document.getElementById('props-empty');
+  const texSec  = document.getElementById('tex-section');
+  const porSec  = document.getElementById('portal-section');
+  const intSec  = document.getElementById('interaction-section');
+  const keySec  = document.getElementById('key-section');
+  const lockSec = document.getElementById('lock-section');
+  const sel     = getObjs().find(o=>o.id===selectedId);
 
   if(!sel){form.style.display='none';empty.style.display='block';return;}
   form.style.display='block'; empty.style.display='none';
 
-  document.getElementById('p-name').value   =sel.name||'';
-  document.getElementById('p-x').value      =Math.round(sel.x);
-  document.getElementById('p-y').value      =Math.round(sel.y);
-  document.getElementById('p-w').value      =Math.round(sel.w);
-  document.getElementById('p-h').value      =Math.round(sel.h);
-  document.getElementById('p-color').value  =sel.color||'#33aaff';
-  document.getElementById('p-opacity').value=sel.opacity??0.7;
-  document.getElementById('p-z').value      =sel.z||0;
+  document.getElementById('p-name').value    = sel.name||'';
+  document.getElementById('p-x').value       = Math.round(sel.x);
+  document.getElementById('p-y').value       = Math.round(sel.y);
+  document.getElementById('p-w').value       = Math.round(sel.w);
+  document.getElementById('p-h').value       = Math.round(sel.h);
+  document.getElementById('p-color').value   = sel.color||'#33aaff';
+  document.getElementById('p-opacity').value = sel.opacity??0.7;
+  document.getElementById('p-z').value       = sel.z||0;
 
-  texSec.style.display = sel.type==='object'  ? 'block':'none';
-  porSec.style.display = sel.type==='portal' ? 'block':'none';
+  // Show/hide type sections
+  texSec .style.display = sel.type==='object'      ? 'block':'none';
+  porSec .style.display = sel.type==='portal'      ? 'block':'none';
+  intSec .style.display = sel.type==='interaction' ? 'block':'none';
+  keySec .style.display = sel.type==='key'         ? 'block':'none';
+  lockSec.style.display = sel.type==='lock'        ? 'block':'none';
+
   refreshTexPreview(sel);
 
   if (sel.type==='portal') {
@@ -855,6 +1035,19 @@ function updateProps() {
       if(sc.id===sel.targetSceneId) opt.selected=true;
       sel2.appendChild(opt);
     }
+  }
+  if (sel.type==='interaction') {
+    document.getElementById('p-dialog-text').value = sel.dialogText||'';
+  }
+  if (sel.type==='key') {
+    document.getElementById('p-key-tag').value    = sel.keyTag||'ключ';
+    document.getElementById('p-pickup-text').value= sel.pickupText||'Подобрать?';
+  }
+  if (sel.type==='lock') {
+    document.getElementById('p-req-key-tag').value = sel.requiredKeyTag||'ключ';
+    document.getElementById('p-req-count').value   = sel.requiredCount||1;
+    document.getElementById('p-unlock-text').value = sel.unlockText||'Открыто!';
+    document.getElementById('p-locked-text').value = sel.lockedText||'Заперто.';
   }
 }
 
@@ -877,7 +1070,9 @@ function refreshTexPreview(sel) {
 }
 
 function bindProp(id,field,parser){
-  document.getElementById(id).addEventListener('input',function(){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input',function(){
     const sel=getObjs().find(o=>o.id===selectedId); if(!sel) return;
     sel[field]=parser?parser(this.value):this.value;
     updateLayers(); render();
@@ -891,6 +1086,16 @@ bindProp('p-h','h',v=>Math.max(1,parseFloat(v)));
 bindProp('p-color','color');
 bindProp('p-opacity','opacity',parseFloat);
 bindProp('p-z','z',parseInt);
+// Interaction
+bindProp('p-dialog-text','dialogText');
+// Key
+bindProp('p-key-tag','keyTag');
+bindProp('p-pickup-text','pickupText');
+// Lock
+bindProp('p-req-key-tag','requiredKeyTag');
+bindProp('p-req-count','requiredCount',v=>Math.max(1,parseInt(v)));
+bindProp('p-unlock-text','unlockText');
+bindProp('p-locked-text','lockedText');
 
 document.getElementById('btn-delete-sel').addEventListener('click',deleteSel);
 function deleteSel(){
@@ -927,13 +1132,22 @@ function updateLayers(){
   document.getElementById('count-display').textContent=`${getObjs().length} объект${getObjs().length===1?'':'ов'}`;
   list.innerHTML='';
   const sorted=[...getObjs()].sort((a,b)=>(b.z||0)-(a.z||0));
+  const typeColors = {
+    collider:'#ff3333', portal:'#aa44ff', object:null,
+    interaction:'#ffaa00', key:'#00ff88', lock:'#ff6600'
+  };
+  const typeLabels = {
+    collider:'col', portal:'prt', object:'obj',
+    interaction:'int', key:'key', lock:'lck'
+  };
   for(const obj of sorted){
     const div=document.createElement('div');
     div.className='layer-item'+(obj.id===selectedId?' selected':'');
-    const colDot=obj.type==='collider'?'#ff3333':obj.type==='portal'?'#aa44ff':(obj.color||'#33aaff');
+    const colDot = typeColors[obj.type] ?? (obj.color||'#33aaff');
+    const tagLbl = typeLabels[obj.type] || 'obj';
     div.innerHTML=`
       <div class="layer-dot" style="background:${colDot}"></div>
-      <span class="type-tag ${obj.type}">${obj.type==='collider'?'col':obj.type==='portal'?'prt':'obj'}</span>
+      <span class="type-tag ${obj.type}">${tagLbl}</span>
       <span class="layer-name">${obj.texture?'▣ ':''}${obj.name||obj.type}</span>
       <button class="layer-del">✕</button>
     `;
@@ -969,11 +1183,19 @@ function buildMapData(){
       id:s.id, name:s.name,
       spawnPoint:{x:Math.round(s.spawnPoint.x),y:Math.round(s.spawnPoint.y)},
       objects:s.objects.map(o=>({
-        id:o.id,type:o.type,name:o.name,
-        x:Math.round(o.x),y:Math.round(o.y),w:Math.round(o.w),h:Math.round(o.h),
-        color:o.color,opacity:o.opacity,z:o.z||0,
+        id:o.id, type:o.type, name:o.name,
+        x:Math.round(o.x), y:Math.round(o.y), w:Math.round(o.w), h:Math.round(o.h),
+        color:o.color, opacity:o.opacity, z:o.z||0,
         texture:o.texture||null,
-        ...(o.type==='portal'?{targetSceneId:o.targetSceneId||null}:{})
+        ...(o.type==='portal'       ? {targetSceneId:o.targetSceneId||null}  : {}),
+        ...(o.type==='interaction'  ? {dialogText:o.dialogText||''}          : {}),
+        ...(o.type==='key'          ? {keyTag:o.keyTag||'ключ', pickupText:o.pickupText||'Подобрать?'} : {}),
+        ...(o.type==='lock'         ? {
+          requiredKeyTag: o.requiredKeyTag||'ключ',
+          requiredCount:  o.requiredCount||1,
+          unlockText:     o.unlockText||'Открыто!',
+          lockedText:     o.lockedText||'Заперто.'
+        } : {})
       }))
     }))
   };
@@ -991,7 +1213,6 @@ function importMapData(data){
     scenes=data.scenes.map(s=>({...s,objects:(s.objects||[]).map(o=>({...o}))}));
     nextSceneId=Math.max(0,...scenes.map(s=>s.id||0))+1;
   } else {
-    // v1 compat
     scenes=[{id:1,name:'сцена 1',spawnPoint:{x:640,y:360},objects:(data.objects||[]).map(o=>({...o}))}];
     nextSceneId=2;
   }
