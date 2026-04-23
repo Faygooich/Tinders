@@ -264,7 +264,7 @@
           "id": 35,
           "type": "collider",
           "name": "collider_35",
-          "x": 1056,
+          "x": 1024,
           "y": 0,
           "w": 32,
           "h": 384,
@@ -442,6 +442,7 @@
           "opacity": 0.35,
           "z": 1,
           "texture": null,
+          "lockType": "normal",
           "requiredKeyTag": "Простой Ключ",
           "requiredCount": 1,
           "unlockText": "Открыто!",
@@ -475,7 +476,7 @@
           "z": -1,
           "texture": null,
           "keyTag": "Холодный Ключ",
-          "pickupText": "Подобрать?"
+          "pickupText": "Холодный Ключ. Подобрать?"
         },
         {
           "id": 54,
@@ -489,6 +490,7 @@
           "opacity": 1,
           "z": 1,
           "texture": null,
+          "lockType": "screamer",
           "requiredKeyTag": "Холодный Ключ",
           "requiredCount": 1,
           "unlockText": "Обжигающий холод. Замок щелкнул. Открыто!                                                                                                    Кап кап кап",
