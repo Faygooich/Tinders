@@ -473,7 +473,7 @@
 
   function resolveCollisions(nx, ny, cx, cy) {
     const scene = currentScene();
-    const colliders = (scene?.objects || []).filter(o => o.type === 'collider');
+    const colliders = (scene?.objects || []).filter(o => o.type === 'collider' || o.type === 'lock');
     let rx = nx, ry = ny;
     for (const c of colliders) {
       if (rectsOverlap(playerHitbox(rx, cy), c)) rx = cx;
