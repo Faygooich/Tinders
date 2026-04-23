@@ -13,6 +13,7 @@
       --red:#ff3333; --blue:#33aaff; --purple:#aa44ff; --green:#00ff88;
       --orange:#ffaa00; --keyc:#00ff88; --lockc:#ff6600;
       --dim:#444; --text:#ccc; --text-dim:#555; --font:'CustomFont',monospace;
+      --locksc:#dd0033;
     }
 
     body{ background:var(--bg); color:var(--text); font-family:var(--font); width:100vw; height:100vh; overflow:hidden; display:flex; }
@@ -117,6 +118,7 @@
     .type-tag.interaction { border-color:var(--orange); color:var(--orange); }
     .type-tag.key         { border-color:var(--keyc);   color:var(--keyc);   }
     .type-tag.lock        { border-color:var(--lockc);  color:var(--lockc);  }
+    .type-tag.lock-screamer{ border-color:var(--locksc); color:var(--locksc); }
 
     .act-btn{
       width:100%; padding:7px 0; background:transparent; border:1px solid var(--border);
@@ -367,6 +369,13 @@
       <!-- ── LOCK PROPERTIES ── -->
       <div id="lock-section" style="display:none; margin-top:8px;">
         <div class="panel-title" style="margin-bottom:6px; color:var(--lockc);">замок</div>
+        <div class="prop-row">
+          <span class="prop-label">тип</span>
+          <select class="prop-input" id="p-lock-type">
+            <option value="normal">обычный</option>
+            <option value="screamer">скример</option>
+          </select>
+        </div>
         <div class="prop-row">
           <span class="prop-label">тег</span>
           <input class="prop-input" id="p-req-key-tag" type="text" placeholder="ключ">
@@ -625,16 +634,19 @@ function drawObj(obj, selected) {
     }
 
   } else if (obj.type === 'lock') {
+    const isScreamer = obj.lockType === 'screamer';
+    const lockColor = isScreamer ? '#dd0033' : (obj.color || '#ff6600');
     const dispAlpha = Math.max(alpha, 0.2);
-    ctx.fillStyle=hexToRgba(col,dispAlpha); ctx.fillRect(sx,sy,sw,sh);
-    ctx.strokeStyle=selected?'#c8ff00':col; ctx.lineWidth=selected?1.5:1;
+    ctx.fillStyle=hexToRgba(lockColor,dispAlpha); ctx.fillRect(sx,sy,sw,sh);
+    ctx.strokeStyle=selected?'#c8ff00':lockColor; ctx.lineWidth=selected?1.5:1;
     ctx.setLineDash([4,2]); ctx.strokeRect(sx+.5,sy+.5,sw-1,sh-1); ctx.setLineDash([]);
     if (zoom>0.25&&sw>22) {
-      ctx.fillStyle=col; ctx.font=`${Math.max(8,9*zoom)}px monospace`;
+      ctx.fillStyle=lockColor; ctx.font=`${Math.max(8,9*zoom)}px monospace`;
       ctx.globalAlpha=0.9;
       const tag = obj.requiredKeyTag||'key';
       const cnt = obj.requiredCount||1;
-      ctx.fillText('🔒 '+tag+(cnt>1?'×'+cnt:''), sx+3, sy+11);
+      const icon = isScreamer ? '💀' : '🔒';
+      ctx.fillText(icon+' '+tag+(cnt>1?'×'+cnt:''), sx+3, sy+11);
       ctx.globalAlpha=1;
     }
   }
@@ -805,7 +817,7 @@ canvas.addEventListener('mouseup', () => {
         ...(tool==='portal'      ? {targetSceneId:null} : {}),
         ...(tool==='interaction' ? {dialogText:''}      : {}),
         ...(tool==='key'         ? {keyTag:'ключ', pickupText:'Подобрать?'} : {}),
-        ...(tool==='lock'        ? {requiredKeyTag:'ключ', requiredCount:1, unlockText:'Открыто!', lockedText:'Заперто.'} : {})
+        ...(tool==='lock'        ? {requiredKeyTag:'ключ', requiredCount:1, lockType:'normal', unlockText:'Открыто!', lockedText:'Заперто.'} : {})
       };
       getObjs().push(obj);
       selectedId=obj.id; updateProps(); updateLayers();
@@ -1044,6 +1056,7 @@ function updateProps() {
     document.getElementById('p-pickup-text').value= sel.pickupText||'Подобрать?';
   }
   if (sel.type==='lock') {
+    document.getElementById('p-lock-type').value    = sel.lockType||'normal';
     document.getElementById('p-req-key-tag').value = sel.requiredKeyTag||'ключ';
     document.getElementById('p-req-count').value   = sel.requiredCount||1;
     document.getElementById('p-unlock-text').value = sel.unlockText||'Открыто!';
@@ -1092,6 +1105,7 @@ bindProp('p-dialog-text','dialogText');
 bindProp('p-key-tag','keyTag');
 bindProp('p-pickup-text','pickupText');
 // Lock
+bindProp('p-lock-type','lockType');
 bindProp('p-req-key-tag','requiredKeyTag');
 bindProp('p-req-count','requiredCount',v=>Math.max(1,parseInt(v)));
 bindProp('p-unlock-text','unlockText');
@@ -1143,11 +1157,13 @@ function updateLayers(){
   for(const obj of sorted){
     const div=document.createElement('div');
     div.className='layer-item'+(obj.id===selectedId?' selected':'');
-    const colDot = typeColors[obj.type] ?? (obj.color||'#33aaff');
-    const tagLbl = typeLabels[obj.type] || 'obj';
+    const isScreamer = obj.type==='lock' && obj.lockType==='screamer';
+    const colDot = isScreamer ? '#dd0033' : (typeColors[obj.type] ?? (obj.color||'#33aaff'));
+    const tagLbl = isScreamer ? 'sc!' : (typeLabels[obj.type] || 'obj');
+    const tagClass = isScreamer ? 'lock-screamer' : (obj.type);
     div.innerHTML=`
       <div class="layer-dot" style="background:${colDot}"></div>
-      <span class="type-tag ${obj.type}">${tagLbl}</span>
+      <span class="type-tag ${tagClass}">${tagLbl}</span>
       <span class="layer-name">${obj.texture?'▣ ':''}${obj.name||obj.type}</span>
       <button class="layer-del">✕</button>
     `;
@@ -1191,6 +1207,7 @@ function buildMapData(){
         ...(o.type==='interaction'  ? {dialogText:o.dialogText||''}          : {}),
         ...(o.type==='key'          ? {keyTag:o.keyTag||'ключ', pickupText:o.pickupText||'Подобрать?'} : {}),
         ...(o.type==='lock'         ? {
+          lockType:       o.lockType||'normal',
           requiredKeyTag: o.requiredKeyTag||'ключ',
           requiredCount:  o.requiredCount||1,
           unlockText:     o.unlockText||'Открыто!',

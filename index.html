@@ -354,13 +354,21 @@
     } else if (obj.type === 'lock') {
       const tag  = obj.requiredKeyTag || 'ключ';
       const need = Math.max(1, obj.requiredCount || 1);
+      const isScreamer = obj.lockType === 'screamer';
       if ((inventory[tag] || 0) >= need) {
         inventory[tag] -= need;
         updateKeyHUD();
         const sc = currentScene();
-        openTextDialog(obj.unlockText || 'Открыто!', () => {
+        if (isScreamer) {
           if (sc) sc.objects = sc.objects.filter(o => o.id !== obj.id);
-        });
+          openTextDialog(obj.unlockText || 'Открыто!');
+          dlgLocked = true;
+          runJumpscareSequence();
+        } else {
+          openTextDialog(obj.unlockText || 'Открыто!', () => {
+            if (sc) sc.objects = sc.objects.filter(o => o.id !== obj.id);
+          });
+        }
       } else {
         openTextDialog(obj.lockedText || 'Заперто.');
       }
