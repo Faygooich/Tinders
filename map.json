@@ -428,7 +428,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 2
+          "targetSceneId": 2,
+          "arrivalId": null
         },
         {
           "id": 49,
@@ -649,7 +650,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 3
+          "targetSceneId": 3,
+          "arrivalId": 186
         },
         {
           "id": 102,
@@ -730,6 +732,32 @@
           "z": 1,
           "texture": null,
           "dialogText": "Загадочный монумент, стоя на котором вы появились в этой комнате. На его верхушке нарисован ромб, а на основе выцарапана надпись «⌖⌗⊏⏃⊏⊑⊔⟟⌰»"
+        },
+        {
+          "id": 188,
+          "type": "arrival",
+          "name": "1 2",
+          "x": 920,
+          "y": 184,
+          "w": 16,
+          "h": 20,
+          "color": "#cc88ff",
+          "opacity": 0,
+          "z": 1,
+          "texture": null
+        },
+        {
+          "id": 190,
+          "type": "arrival",
+          "name": "1 3",
+          "x": 1152,
+          "y": 496,
+          "w": 32,
+          "h": 32,
+          "color": "#cc88ff",
+          "opacity": 0,
+          "z": 1,
+          "texture": null
         }
       ]
     },
@@ -881,9 +909,10 @@
           "h": 84,
           "color": "#aa44ff",
           "opacity": 0,
-          "z": 5,
+          "z": 22,
           "texture": null,
-          "targetSceneId": 6
+          "targetSceneId": 6,
+          "arrivalId": null
         },
         {
           "id": 166,
@@ -897,7 +926,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 1
+          "targetSceneId": 1,
+          "arrivalId": 190
         },
         {
           "id": 168,
@@ -1028,6 +1058,19 @@
           "opacity": 0.7,
           "z": 19,
           "texture": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAYAAAChS3wfAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAm0lEQVRoge3QoQrCABgA4c0yhjIYGASTxfd/RPsfLIYveNeuHbcuv/Me/hr+HP4Yfh9+Dj+G34Zfh+/Dt29+Wf6cBugATQN0gKYBOkDTAB2gaYAO0DRAB2gaoAM0DdABmgboAE0DdICmATpA0wAdoGmADtA0QAdoGqADNA3QAZoG6ABNA3SApgE6QNMAHaBpgA7QNEAHaBqgAzQfCIIBO8dbjx4AAAAASUVORK5CYII="
+        },
+        {
+          "id": 189,
+          "type": "arrival",
+          "name": "2 2",
+          "x": 1544,
+          "y": 316,
+          "w": 20,
+          "h": 16,
+          "color": "#cc88ff",
+          "opacity": 0.25,
+          "z": 1,
+          "texture": null
         }
       ]
     },
@@ -1103,7 +1146,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 4
+          "targetSceneId": 4,
+          "arrivalId": null
         },
         {
           "id": 83,
@@ -1169,7 +1213,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 1
+          "targetSceneId": 1,
+          "arrivalId": 188
         },
         {
           "id": 107,
@@ -1198,6 +1243,32 @@
           "texture": null,
           "keyTag": "Простой Ключ",
           "pickupText": "Треснутая плитка. Вы приподнимаете ее и видите что-то блестящее. Подобрать?"
+        },
+        {
+          "id": 186,
+          "type": "arrival",
+          "name": "сцена 3 2",
+          "x": 668,
+          "y": 232,
+          "w": 16,
+          "h": 20,
+          "color": "#cc88ff",
+          "opacity": 0.25,
+          "z": 1,
+          "texture": null
+        },
+        {
+          "id": 187,
+          "type": "arrival",
+          "name": "сцена 3 1",
+          "x": 668,
+          "y": 664,
+          "w": 16,
+          "h": 20,
+          "color": "#cc88ff",
+          "opacity": 0.25,
+          "z": 1,
+          "texture": null
         }
       ]
     },
@@ -1314,7 +1385,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 3
+          "targetSceneId": 3,
+          "arrivalId": 186
         },
         {
           "id": 101,
@@ -1335,9 +1407,9 @@
           "type": "object",
           "name": "object_110",
           "x": 232,
-          "y": 580,
+          "y": 584,
           "w": 64,
-          "h": 148,
+          "h": 144,
           "color": "#000000",
           "opacity": 1,
           "z": 0,
@@ -1557,8 +1629,8 @@
           "name": "collider_128",
           "x": 156,
           "y": 108,
-          "w": 76,
-          "h": 472,
+          "w": 72,
+          "h": 476,
           "color": "#ff3333",
           "opacity": 0.3,
           "z": 10,
@@ -1569,9 +1641,9 @@
           "type": "collider",
           "name": "collider_129",
           "x": 204,
-          "y": 580,
+          "y": 584,
           "w": 92,
-          "h": 156,
+          "h": 148,
           "color": "#ff3333",
           "opacity": 0.3,
           "z": 10,
@@ -1659,9 +1731,9 @@
           "id": 136,
           "type": "collider",
           "name": "collider_136",
-          "x": 488,
+          "x": 492,
           "y": 152,
-          "w": 128,
+          "w": 124,
           "h": 108,
           "color": "#ff3333",
           "opacity": 0.3,
@@ -1719,7 +1791,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 5
+          "targetSceneId": 5,
+          "arrivalId": null
         },
         {
           "id": 152,
@@ -1855,7 +1928,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 1
+          "targetSceneId": 1,
+          "arrivalId": null
         }
       ]
     },
@@ -1879,7 +1953,8 @@
           "opacity": 0,
           "z": 5,
           "texture": null,
-          "targetSceneId": 2
+          "targetSceneId": 2,
+          "arrivalId": 189
         },
         {
           "id": 174,
