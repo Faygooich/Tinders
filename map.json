@@ -1253,8 +1253,8 @@
           "w": 16,
           "h": 20,
           "color": "#cc88ff",
-          "opacity": 0.25,
-          "z": 1,
+          "opacity": 0,
+          "z": -3,
           "texture": null
         },
         {
@@ -1266,8 +1266,8 @@
           "w": 16,
           "h": 20,
           "color": "#cc88ff",
-          "opacity": 0.25,
-          "z": 1,
+          "opacity": 0,
+          "z": -3,
           "texture": null
         }
       ]
@@ -1954,7 +1954,7 @@
           "z": 5,
           "texture": null,
           "targetSceneId": 2,
-          "arrivalId": 189
+          "arrivalId": null
         },
         {
           "id": 174,
